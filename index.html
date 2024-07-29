@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Temporizador</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    #timer {
+      font-size: 3rem;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    #status {
+      font-size: 1.5rem;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    #set-time {
+      padding: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      background-color: #333;
+      color: #fff;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      transition: background-color 0.3s, transform 0.1s;
+    }
+    #set-time:active, .pressing {
+      transform: scale(0.75);
+    }
+  </style>
+</head>
+<body>
+  <div id="timer">00:00</div>
+  <div id="status">Estado: Inicial</div>
+  <button id="set-time"></button>
+
+  <script>
+    let setTime = 0;
+    let remainingTime = 0; 
+    let isSettingMinutes = false;
+    let isSettingSeconds = false;
+    let isTimerRunning = false;
+    let isPaused = false;
+    let timerInterval;
+    let timeoutId; 
+    let isLongPress = false;
+    const LONG_PRESS_DURATION = 1000; 
+
+    function updateDisplay(time) {
+      const minutes = Math.floor(time / 60);
+      const seconds = time % 60;
+      document.getElementById('timer').textContent =
+        (minutes < 10 ? '0' : '') + minutes + ':' +
+        (seconds < 10 ? '0' : '') + seconds;
+    }
+
+    function updateStatus(state) {
+      document.getElementById('status').textContent = `Estado: ${state}`;
+    }
+
+    function startTimer(duration) {
+      if (isPaused) { 
+        timer = remainingTime;
+      } else { 
+        timer = duration;
+      }
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (timer <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('timer').textContent = '00:00';
+          isTimerRunning = false;
+          isPaused = false;
+          updateStatus('Inicial');
+          return;
+        }
+        timer--;
+        updateDisplay(timer);
+      }, 1000);
+      isTimerRunning = true;
+      isPaused = false;
+      updateStatus('Cronometrando');
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      remainingTime = parseInt(document.getElementById('timer').textContent.split(":")[0]) * 60 + parseInt(document.getElementById('timer').textContent.split(":")[1]); 
+      isTimerRunning = false;
+      isPaused = true;
+      updateStatus('Pausado');
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      setTime = 0;
+      remainingTime = 0; // Reset remainingTime também
+      updateDisplay(setTime);
+      isTimerRunning = false;
+      isPaused = false;
+      isSettingMinutes = false;
+      isSettingSeconds = false;
+      updateStatus('Inicial');
+    }
+
+    function handleClick() {
+      if (isTimerRunning) {
+        stopTimer(); 
+      } else if (isPaused) {
+        startTimer(setTime); 
+      } else { 
+        if (isSettingMinutes) {
+          setTime += 60;
+        } else if (isSettingSeconds) {
+          setTime++;
+        } else if (setTime > 0) { 
+          startTimer(setTime);
+        } 
+        updateDisplay(setTime);
+      }
+    }
+
+    function handleLongPress() {
+      isLongPress = true; 
+      if (isTimerRunning || isPaused) {
+        resetTimer();
+      } else {
+        if (!isSettingMinutes && !isSettingSeconds) { 
+          isSettingMinutes = true;
+          updateStatus('Configuração de Minutos');
+        } else if (isSettingMinutes) { 
+          isSettingMinutes = false;
+          isSettingSeconds = true;
+          updateStatus('Configuração de Segundos');
+        } else if (isSettingSeconds) {
+          isSettingSeconds = false;
+          isSettingMinutes = false; 
+          updateStatus('Inicial');
+        }
+      }
+    }
+
+    document.getElementById('set-time').addEventListener('mousedown', () => {
+      timeoutId = setTimeout(handleLongPress, LONG_PRESS_DURATION);
+    });
+
+    document.getElementById('set-time').addEventListener('mouseup', () => {
+      clearTimeout(timeoutId); 
+      if (!isLongPress) {
+        handleClick();
+      }
+      isLongPress = false; 
+    });
+
+    document.getElementById('set-time').addEventListener('mouseleave', () => {
+      clearTimeout(timeoutId); 
+      isLongPress = false; 
+    });
+
+    window.onload = () => {
+      updateDisplay(setTime);
+      updateStatus('Inicial');
+    };
+  </script>
+</body>
+</html>
